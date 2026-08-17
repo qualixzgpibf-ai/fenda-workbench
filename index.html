@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>芬达工作台</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="芬达工作台">
+<meta name="theme-color" content="#1976d2">
+<link rel="apple-touch-icon" href="芬达工作台-icon-180.png">
+<link rel="icon" href="芬达工作台-icon-192.png">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { height:100%; }
+body {
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;
+  background:#f2f6fb; color:#222; max-width:480px; margin:0 auto;
+  display:flex; flex-direction:column; height:100dvh;
+}
+header.appbar {
+  background:#1976d2; color:#fff; padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;
+  font-size:18px; font-weight:600; text-align:center; flex-shrink:0;
+  box-shadow:0 2px 6px rgba(0,0,0,.12); z-index:10;
+}
+main { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 10px 16px; }
+nav.tabbar {
+  flex-shrink:0; display:flex; background:#fff; border-top:1px solid #e0e6ee;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+nav.tabbar button {
+  flex:1; border:none; background:none; padding:10px 0 8px; font-size:15px; color:#8a94a6;
+  display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer;
+}
+nav.tabbar button.active { color:#1976d2; font-weight:600; }
+nav.tabbar .ico { font-size:20px; line-height:1; }
+
+/* ===== 出诊日历 ===== */
+.cal-head { display:flex; align-items:center; justify-content:space-between; padding:4px 6px 10px; }
+.cal-head .ym { font-size:17px; font-weight:600; }
+.cal-head button {
+  border:none; background:#fff; color:#1976d2; font-size:20px; width:40px; height:36px;
+  border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.08); cursor:pointer;
+}
+.zone-filter { display:flex; gap:8px; padding:0 2px 10px; }
+.zone-filter button {
+  flex:1; border:1px solid #d3dce8; background:#fff; color:#5a6675; font-size:14px;
+  padding:7px 0; border-radius:20px; cursor:pointer;
+}
+.zone-filter button.active { background:#1976d2; border-color:#1976d2; color:#fff; font-weight:600; }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+.cal-grid .dow {
+  text-align:center; font-size:12px; color:#8a94a6; padding:4px 0;
+}
+.cal-cell {
+  background:#fff; border-radius:8px; min-height:56px; padding:3px 2px 2px;
+  display:flex; flex-direction:column; align-items:center; cursor:pointer;
+  border:1.5px solid transparent;
+}
+.cal-cell.blank { background:none; cursor:default; }
+.cal-cell .num { font-size:13px; font-weight:500; color:#333; line-height:1.3; }
+.cal-cell.today .num {
+  background:#1976d2; color:#fff; border-radius:50%; width:20px; height:20px;
+  display:flex; align-items:center; justify-content:center;
+}
+.cal-cell.selected { border-color:#1976d2; }
+.cal-cell .names { width:100%; overflow:hidden; }
+.cal-cell .nm {
+  font-size:9px; color:#455; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  text-align:center; line-height:1.35;
+}
+.cal-cell .nm.z3 { color:#1565c0; }
+.cal-cell .nm.z7 { color:#6a1b9a; }
+.cal-cell .more { font-size:9px; color:#99a; text-align:center; line-height:1.2; }
+.cal-cell.weekend { background:#f8fafc; }
+
+.day-detail { margin-top:12px; background:#fff; border-radius:12px; padding:12px 14px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+.day-detail h3 { font-size:15px; margin-bottom:8px; color:#1976d2; }
+.zone-group { margin-bottom:10px; }
+.zone-group:last-child { margin-bottom:0; }
+.zone-tag { font-size:12px; font-weight:600; color:#fff; background:#1565c0; display:inline-block; padding:2px 8px; border-radius:10px; margin-bottom:6px; }
+.zone-tag.z7 { background:#6a1b9a; }
+.doc-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:7px 2px; border-bottom:1px solid #f0f3f7;
+}
+.doc-row:last-child { border-bottom:none; }
+.doc-name { font-size:15px; font-weight:500; }
+.doc-name.clinic { color:#607d8b; font-weight:400; font-size:14px; }
+.slot-badges { display:flex; gap:5px; }
+.badge {
+  font-size:11px; padding:2px 8px; border-radius:10px; white-space:nowrap;
+}
+.badge.am { background:#e3f2fd; color:#1565c0; }
+.badge.pm { background:#fff3e0; color:#e65100; }
+.empty-tip { color:#99a; font-size:14px; text-align:center; padding:14px 0; }
+.search-box { padding:0 2px 10px; }
+.search-box input {
+  width:100%; border:1px solid #d3dce8; border-radius:20px; padding:9px 16px;
+  font-size:15px; background:#fff; outline:none; color:#222;
+}
+.search-box input:focus { border-color:#1976d2; }
+.slot-block { margin-bottom:10px; }
+.slot-block:last-child { margin-bottom:0; }
+.slot-head { font-size:14px; font-weight:700; color:#333; margin-bottom:6px; }
+.slot-docs { font-size:14px; color:#333; line-height:2; }
+.doc-inline { white-space:nowrap; }
+.doc-inline.clinic { color:#90a4ae; font-size:13px; }
+.search-result { margin-top:12px; background:#fff; border-radius:12px; padding:12px 14px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+.search-result h3 { font-size:15px; margin-bottom:8px; color:#1976d2; }
+.sr-doc { padding:8px 0; border-bottom:1px solid #f0f3f7; }
+.sr-doc:last-child { border-bottom:none; }
+.sr-name { font-size:15px; font-weight:600; margin-bottom:4px; }
+.sr-sched { display:flex; flex-wrap:wrap; gap:5px; }
+.sr-item { font-size:12px; background:#f2f6fb; border-radius:10px; padding:3px 8px; color:#455; }
+.sr-item .zt3 { color:#1565c0; }
+.sr-item .zt7 { color:#6a1b9a; }
+
+/* ===== 手术周视图 ===== */
+.week-head { display:flex; align-items:center; justify-content:space-between; padding:4px 6px 10px; }
+.week-head .range { font-size:16px; font-weight:600; }
+.week-head button {
+  border:none; background:#fff; color:#1976d2; font-size:20px; width:40px; height:36px;
+  border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.08); cursor:pointer;
+}
+.legend {
+  display:flex; gap:14px; padding:0 4px 10px; font-size:12px; color:#5a6675; flex-wrap:wrap;
+}
+.legend span { display:flex; align-items:center; gap:4px; }
+.dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+.dot.op { background:#e53935; }
+.dot.admit { background:#43a047; }
+.dot.disch { background:#1e88e5; }
+.day-card { background:#fff; border-radius:12px; margin-bottom:10px; padding:10px 12px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+.day-card.today { outline:2px solid #1976d2; }
+.day-title { display:flex; align-items:baseline; gap:8px; margin-bottom:6px; }
+.day-title .wd { font-size:15px; font-weight:700; }
+.day-title .dt { font-size:12px; color:#8a94a6; }
+.day-title .today-tag { font-size:11px; color:#fff; background:#1976d2; border-radius:8px; padding:1px 6px; }
+.slot-row { display:flex; padding:6px 0; border-top:1px solid #f0f3f7; }
+.slot-row:first-of-type { border-top:none; }
+.slot-label {
+  flex-shrink:0; width:38px; font-size:13px; color:#8a94a6; font-weight:600; padding-top:2px;
+}
+.slot-content { flex:1; display:flex; flex-direction:column; gap:5px; }
+.chip-group { display:flex; flex-wrap:wrap; gap:5px; align-items:center; }
+.chip-label { font-size:11px; font-weight:700; margin-right:1px; }
+.chip-label.op { color:#e53935; }
+.chip-label.admit { color:#43a047; }
+.chip-label.disch { color:#1e88e5; }
+.chip {
+  font-size:13px; padding:3px 10px; border-radius:14px; white-space:nowrap;
+}
+.chip.op { background:#ffebee; color:#c62828; }
+.chip.admit { background:#e8f5e9; color:#2e7d32; }
+.chip.disch { background:#e3f2fd; color:#1565c0; }
+.slot-none { font-size:12px; color:#c3cad4; padding-top:2px; }
+.footnote { font-size:12px; color:#8a94a6; text-align:center; padding:8px 0 4px; }
+</style>
+</head>
+<body>
+<header class="appbar">芬达工作台</header>
+<main id="main"></main>
+<nav class="tabbar">
+  <button id="tab-clinic" class="active" onclick="switchTab('clinic')">
+    <span class="ico">🩺</span><span>出诊</span>
+  </button>
+  <button id="tab-surgery" onclick="switchTab('surgery')">
+    <span class="ico">🔪</span><span>手术</span>
+  </button>
+</nav>
+<script>
+/* ================= 排班数据（按星期循环，key: 1=周一 … 5=周五） ================= */
+// 出诊：zone3=冠心病三区, zone7=冠心病七区；slots: ["上午","下午"]；clinic=true 表示普通/专病门诊
+const OUTPATIENT = {
+  1: { zone3: [ {n:"曾勇",s:["上午"]}, {n:"潘昱",s:["下午"]}, {n:"三区普通门诊",s:["上午","下午"],c:1} ],
+       zone7: [ {n:"祖晓麟",s:["上午","下午"]}, {n:"公绪合",s:["上午","下午"]}, {n:"刘飞",s:["上午"]}, {n:"屈超",s:["上午","下午"]}, {n:"七区普通门诊",s:["上午","下午"],c:1}, {n:"心肌梗死综合治疗门诊",s:["上午","下午"],c:1}, {n:"起搏器复查门诊",s:["下午"],c:1} ] },
+  2: { zone3: [ {n:"汪国忠",s:["上午","下午"]}, {n:"张晓霞",s:["上午","下午"]}, {n:"孟康",s:["下午"]}, {n:"三区普通门诊",s:["上午","下午"],c:1} ],
+       zone7: [ {n:"崔贺贺",s:["上午","下午"]}, {n:"心肌梗死综合治疗门诊",s:["上午","下午"],c:1}, {n:"七区普通门诊",s:["上午","下午"],c:1} ] },
+  3: { zone3: [ {n:"高阅春",s:["上午","下午"]}, {n:"叶益聪",s:["上午"]}, {n:"张晓霞",s:["上午"]}, {n:"朱华刚",s:["下午"]}, {n:"三区普通门诊",s:["上午","下午"],c:1} ],
+       zone7: [ {n:"李响",s:["上午","下午"]}, {n:"心肌梗死综合治疗门诊",s:["上午","下午"],c:1}, {n:"七区普通门诊",s:["上午","下午"],c:1} ] },
+  4: { zone3: [ {n:"曾勇",s:["上午"]}, {n:"孟康",s:["上午"]}, {n:"李宇",s:["上午","下午"]}, {n:"叶益聪",s:["上午"]}, {n:"三区普通门诊",s:["上午","下午"],c:1} ],
+       zone7: [ {n:"屈超",s:["上午","下午"]}, {n:"高霏",s:["上午"]}, {n:"心肌梗死综合治疗门诊",s:["上午","下午"],c:1}, {n:"起搏器复查门诊",s:["上午"],c:1}, {n:"七区普通门诊",s:["上午","下午"],c:1} ] },
+  5: { zone3: [ {n:"潘昱",s:["上午"]}, {n:"朱华刚",s:["上午"]}, {n:"三区普通门诊",s:["上午","下午"],c:1} ],
+       zone7: [ {n:"公绪合",s:["上午","下午"]}, {n:"心肌梗死综合治疗门诊",s:["上午","下午"],c:1}, {n:"七区普通门诊",s:["上午","下午"],c:1} ] }
+};
+
+// 手术日：slots: ["上午","下午","晚上"]
+const SURGERY = {
+  1: [ {n:"潘昱",s:["上午"]}, {n:"玉献鹏",s:["上午"]}, {n:"张铭",s:["下午"]}, {n:"张晓玲",s:["下午","晚上"]}, {n:"吴长燕",s:["晚上"]} ],
+  2: [ {n:"孟康",s:["上午"]}, {n:"田磊",s:["下午","晚上"]}, {n:"赵昔良",s:["上午","下午","晚上"]} ],
+  3: [ {n:"李宇",s:["上午","下午","晚上"]}, {n:"朱华刚",s:["上午"]}, {n:"张晓霞",s:["下午"]}, {n:"叶益聪",s:["晚上"]} ],
+  4: [ {n:"汪国忠",s:["上午","下午"]}, {n:"孟康",s:["晚上"]}, {n:"赵昔良",s:["上午","下午","晚上"]} ],
+  5: [ {n:"张铭",s:["上午"]}, {n:"叶益聪",s:["上午"]}, {n:"潘昱",s:["下午"]}, {n:"朱华刚",s:["下午"]}, {n:"张晓玲",s:["晚上"]} ]
+};
+
+/* ================= 公共 ================= */
+const WD_NAMES = ["周日","周一","周二","周三","周四","周五","周六"];
+const main = document.getElementById("main");
+const today = new Date(); today.setHours(0,0,0,0);
+let curTab = "clinic";
+
+function switchTab(tab) {
+  curTab = tab;
+  document.getElementById("tab-clinic").classList.toggle("active", tab==="clinic");
+  document.getElementById("tab-surgery").classList.toggle("active", tab==="surgery");
+  if (tab==="clinic") renderClinic(); else renderSurgery();
+}
+function sameDay(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+function fmt(d){ return (d.getMonth()+1)+"/"+d.getDate(); }
+
+/* ================= 出诊日历 ================= */
+let calY = today.getFullYear(), calM = today.getMonth();
+let selDate = new Date(today);
+let zoneFilter = "all"; // all | zone3 | zone7
+
+function clinicEntries(wd) {
+  const day = OUTPATIENT[wd];
+  if (!day) return { zone3: [], zone7: [] };
+  return {
+    zone3: (zoneFilter==="all"||zoneFilter==="zone3") ? day.zone3 : [],
+    zone7: (zoneFilter==="all"||zoneFilter==="zone7") ? day.zone7 : []
+  };
+}
+
+function renderClinic() {
+  const first = new Date(calY, calM, 1);
+  const daysInMonth = new Date(calY, calM+1, 0).getDate();
+  const offset = (first.getDay()+6)%7; // 周一开头
+
+  let html = '<div class="cal-head">'
+    + '<button onclick="changeMonth(-1)">‹</button>'
+    + '<div class="ym">'+calY+'年'+(calM+1)+'月</div>'
+    + '<button onclick="changeMonth(1)">›</button></div>';
+
+  html += '<div class="zone-filter">'
+    + '<button class="'+(zoneFilter==="all"?"active":"")+'" onclick="setZone(\'all\')">全部</button>'
+    + '<button class="'+(zoneFilter==="zone3"?"active":"")+'" onclick="setZone(\'zone3\')">冠心病三区</button>'
+    + '<button class="'+(zoneFilter==="zone7"?"active":"")+'" onclick="setZone(\'zone7\')">冠心病七区</button>'
+    + '</div>';
+
+  html += '<div class="search-box"><input type="search" placeholder="🔍 搜索医生姓名" value="'
+    + searchQ.replace(/"/g,'&quot;') + '" oninput="doSearch(this.value)"></div>';
+
+  html += '<div class="cal-grid">';
+  ["一","二","三","四","五","六","日"].forEach(d=>{ html += '<div class="dow">'+d+'</div>'; });
+  for (let i=0;i<offset;i++) html += '<div class="cal-cell blank"></div>';
+  for (let d=1; d<=daysInMonth; d++) {
+    const date = new Date(calY, calM, d);
+    const wd = date.getDay();
+    const e = clinicEntries(wd);
+    const names = []
+      .concat(e.zone3.map(x=>({t:x.n,z:"z3"})), e.zone7.map(x=>({t:x.n,z:"z7"})));
+    let cls = "cal-cell";
+    if (wd===0||wd===6) cls += " weekend";
+    if (sameDay(date,today)) cls += " today";
+    if (selDate && sameDay(date,selDate)) cls += " selected";
+    html += '<div class="'+cls+'" onclick="selectDay('+d+')"><div class="num">'+d+'</div><div class="names">';
+    names.slice(0,2).forEach(x=>{ html += '<div class="nm '+x.z+'">'+x.t+'</div>'; });
+    if (names.length>2) html += '<div class="more">+'+(names.length-2)+'</div>';
+    html += '</div></div>';
+  }
+  html += '</div>';
+  html += '<div id="dayDetail"></div>';
+  html += '<div id="searchResult" style="display:none"></div>';
+  main.innerHTML = html;
+  renderDayDetail();
+  applySearch();
+}
+
+function renderDayDetail() {
+  const box = document.getElementById("dayDetail");
+  if (!selDate) { box.innerHTML=""; return; }
+  const wd = selDate.getDay();
+  const e = clinicEntries(wd);
+  let html = '<div class="day-detail"><h3>'
+    + fmt(selDate)+' '+WD_NAMES[wd]+' 出诊安排</h3>';
+  let any = false;
+  ["上午","下午"].forEach(slot=>{
+    let block = "";
+    [["zone3","冠心病三区","z3"],["zone7","冠心病七区","z7"]].forEach(g=>{
+      const list = e[g[0]].filter(x=>x.s.includes(slot));
+      if (!list.length) return;
+      const names = list.map(x=>'<span class="doc-inline'+(x.c?" clinic":"")+'">'+x.n+'</span>').join("、");
+      block += '<div class="zone-group"><span class="zone-tag '+g[2]+'">'+g[1]+'</span>'
+        + '<div class="slot-docs">'+names+'</div></div>';
+    });
+    if (block) {
+      any = true;
+      html += '<div class="slot-block"><div class="slot-head">'
+        + (slot==="上午"?"☀️":"🌤") + ' ' + slot + '</div>' + block + '</div>';
+    }
+  });
+  if (!any) html += '<div class="empty-tip">当日无出诊安排</div>';
+  html += '</div>';
+  box.innerHTML = html;
+}
+
+/* ---- 人名搜索 ---- */
+let searchQ = "";
+function doSearch(q) { searchQ = q.trim(); applySearch(); }
+function applySearch() {
+  const detail = document.getElementById("dayDetail");
+  const result = document.getElementById("searchResult");
+  if (!detail || !result) return;
+  if (!searchQ) {
+    result.innerHTML = ""; result.style.display = "none"; detail.style.display = "";
+    return;
+  }
+  detail.style.display = "none"; result.style.display = "";
+  // 汇总所有出诊医生（不含普通/专病门诊条目）
+  const docs = {}; // name -> [{wd, slot, zone, zc}]
+  for (let wd=1; wd<=5; wd++) {
+    const day = OUTPATIENT[wd];
+    [["zone3","冠心病三区","zt3"],["zone7","冠心病七区","zt7"]].forEach(z=>{
+      day[z[0]].forEach(x=>{
+        if (x.c) return;
+        if (!docs[x.n]) docs[x.n] = [];
+        x.s.forEach(slot=>docs[x.n].push({wd:wd, slot:slot, zone:z[1], zc:z[2]}));
+      });
+    });
+  }
+  const matched = Object.keys(docs).filter(n=>n.includes(searchQ));
+  let html = '<div class="search-result"><h3>“'+searchQ+'”的出诊安排</h3>';
+  if (!matched.length) {
+    html += '<div class="empty-tip">未找到该医生</div>';
+  } else {
+    matched.forEach(n=>{
+      html += '<div class="sr-doc"><div class="sr-name">'+n+'</div><div class="sr-sched">'
+        + docs[n].map(it=>'<span class="sr-item">'+WD_NAMES[it.wd]+' '+it.slot
+          +' · <span class="'+it.zc+'">'+it.zone+'</span></span>').join("")
+        + '</div></div>';
+    });
+  }
+  html += '</div>';
+  result.innerHTML = html;
+}
+
+function changeMonth(delta) {
+  calM += delta;
+  if (calM<0) { calM=11; calY--; }
+  if (calM>11) { calM=0; calY++; }
+  selDate = new Date(calY, calM, 1);
+  renderClinic();
+}
+function selectDay(d) { selDate = new Date(calY, calM, d); renderClinic(); }
+function setZone(z) { zoneFilter = z; renderClinic(); }
+
+/* ================= 手术周视图 ================= */
+function mondayOf(d) {
+  const x = new Date(d);
+  const diff = (x.getDay()+6)%7;
+  x.setDate(x.getDate()-diff);
+  return x;
+}
+let weekStart = mondayOf(today);
+
+function changeWeek(delta) {
+  weekStart.setDate(weekStart.getDate()+delta*7);
+  renderSurgery();
+}
+
+function renderSurgery() {
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate()+6);
+  let html = '<div class="week-head">'
+    + '<button onclick="changeWeek(-1)">‹</button>'
+    + '<div class="range">'+fmt(weekStart)+' ~ '+fmt(weekEnd)+'</div>'
+    + '<button onclick="changeWeek(1)">›</button></div>';
+  html += '<div class="legend">'
+    + '<span><i class="dot op"></i>手术</span>'
+    + '<span><i class="dot admit"></i>收患者（次日手术）</span>'
+    + '<span><i class="dot disch"></i>办出院（昨日手术）</span>'
+    + '</div>';
+
+  for (let i=0; i<7; i++) {
+    const date = new Date(weekStart); date.setDate(date.getDate()+i);
+    const wd = date.getDay(); // 0=周日
+    const ops = SURGERY[wd] || [];
+    // 收患者：明天手术的医生；办出院：昨天手术的医生
+    const tmr = SURGERY[(wd+1)%7] || [];
+    const yst = SURGERY[(wd+6)%7] || [];
+    const admitNames = [...new Set(tmr.map(x=>x.n))];
+    const dischNames = [...new Set(yst.map(x=>x.n))];
+
+    html += '<div class="day-card'+(sameDay(date,today)?" today":"")+'">'
+      + '<div class="day-title"><span class="wd">'+WD_NAMES[wd]+'</span>'
+      + '<span class="dt">'+fmt(date)+'</span>'
+      + (sameDay(date,today)?'<span class="today-tag">今天</span>':'')
+      + '</div>';
+
+    ["上午","下午","晚上"].forEach(slot=>{
+      const slotOps = ops.filter(x=>x.s.includes(slot));
+      let content = "";
+      if (slot==="上午") {
+        if (admitNames.length)
+          content += '<div class="chip-group"><span class="chip-label admit">收患者</span>'
+            + admitNames.map(n=>'<span class="chip admit">'+n+'</span>').join("") + '</div>';
+        if (dischNames.length)
+          content += '<div class="chip-group"><span class="chip-label disch">办出院</span>'
+            + dischNames.map(n=>'<span class="chip disch">'+n+'</span>').join("") + '</div>';
+      }
+      if (slotOps.length)
+        content += '<div class="chip-group"><span class="chip-label op">手术</span>'
+          + slotOps.map(x=>'<span class="chip op">'+x.n+'</span>').join("") + '</div>';
+      if (!content) content = '<span class="slot-none">—</span>';
+      html += '<div class="slot-row"><span class="slot-label">'+slot+'</span>'
+        + '<div class="slot-content">'+content+'</div></div>';
+    });
+    html += '</div>';
+  }
+  html += '<div class="footnote">排班按每周固定循环 · 数据更新于 2026-08</div>';
+  main.innerHTML = html;
+}
+
+/* ================= 启动 ================= */
+renderClinic();
+</script>
+</body>
+</html>
