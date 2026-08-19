@@ -613,24 +613,24 @@ async function callAIOnce(cfg, content, timeoutMs) {
     if (!text) return { err: "接口返回内容为空" };
     return { text: text };
   } catch(e) {
-    if (e.name === "AbortError") return { err: "请求超时（网络不通或被浏览器拦截）" };
-    return { err: "网络错误：" + (e.message || e.name) + "（可能是跨域被拦或断网）" };
+    if (e.name === "AbortError") return { err: "请求超时（网络较慢或生成内容较长）", retryable: true };
+    return { err: "网络错误：" + (e.message || e.name) + "（可能是跨域被拦或断网）", retryable: true };
   }
 }
 
 function sleep(ms) { return new Promise(r=>setTimeout(r, ms)); }
 
-/* 发起一次 AI 请求，成功返回 {text}，失败返回 {err: 原因}；429 自动重试（覆盖并发占满的长请求） */
+/* 发起一次 AI 请求，成功返回 {text}，失败返回 {err: 原因}；429 和网络/超时错误自动重试 */
 async function callAI(cfg, content, timeoutMs) {
-  const waits = [5000, 10000, 15000, 20000, 25000]; // 共 6 次尝试，覆盖约 75s
+  const waits = [5000, 15000, 30000]; // 共 4 次尝试
   let r = null;
   for (let attempt=0; attempt<=waits.length; attempt++) {
     if (attempt > 0) await sleep(waits[attempt-1]);
     r = await callAIOnce(cfg, content, timeoutMs);
     if (!r.err) return r;
-    if (r.status !== 429) return r;   // 只有频率限制才重试
+    if (r.status !== 429 && !r.retryable) return r; // 429 / 网络 / 超时才重试
   }
-  return { err: r.err + "（已自动重试 6 次仍失败，请 1 分钟后再点一次）" };
+  return { err: r.err + "（已自动重试 4 次仍失败，请检查网络后稍后再试）" };
 }
 
 async function testAIConnection() {
@@ -699,12 +699,12 @@ async function generateSummary() {
   }
 
   isGenerating = true;
-  btn.disabled = true; btn.textContent = "生成中（约30-60秒，请勿重复点击）…";
+  btn.disabled = true; btn.textContent = "生成中（约1-2分钟，请勿重复点击）…";
   let summary = null, errDetail = "";
   if (cfg.provider && cfg.key && cfg.base && cfg.model) {
     const prompt = "你是一名医疗工作助手。请根据以下病房工作记录，生成一份简洁的日报摘要。\n"
       + "要求：按时间顺序梳理，突出重点工作、关键人员和待办事项。语言专业、简洁。\n\n记录：\n" + lines.join("\n");
-    const r = await callAI(cfg, prompt, 60000);
+    const r = await callAI(cfg, prompt, 120000);
     if (r.text) summary = r.text;
     else errDetail = r.err;
   }
