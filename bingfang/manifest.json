@@ -1,0 +1,16 @@
+{
+  "name": "病房纪要",
+  "short_name": "病房纪要",
+  "description": "每日病房工作记录工作台",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f2f6fb",
+  "theme_color": "#1976d2",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "病房纪要-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "病房纪要-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

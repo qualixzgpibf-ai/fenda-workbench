@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>病房纪要</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="病房纪要">
+<meta name="theme-color" content="#1976d2">
+<link rel="apple-touch-icon" href="病房纪要-icon-180.png">
+<link rel="icon" href="病房纪要-icon-192.png">
+<link rel="manifest" href="manifest.json">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { height:100%; }
+body {
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;
+  background:#f2f6fb; color:#222; max-width:480px; margin:0 auto;
+  display:flex; flex-direction:column; height:100dvh;
+}
+header.appbar {
+  background:#1976d2; color:#fff; padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;
+  font-size:18px; font-weight:600; text-align:center; flex-shrink:0;
+  box-shadow:0 2px 6px rgba(0,0,0,.12); z-index:10;
+}
+main { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px 12px 20px; }
+
+/* ===== 日历视图 ===== */
+.cal-head { display:flex; align-items:center; justify-content:space-between; padding:4px 6px 12px; }
+.cal-head .ym { font-size:17px; font-weight:600; }
+.cal-head button {
+  border:none; background:#fff; color:#1976d2; font-size:20px; width:42px; height:38px;
+  border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.08); cursor:pointer;
+}
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.cal-grid .dow { text-align:center; font-size:12px; color:#8a94a6; padding:4px 0; }
+.cal-cell {
+  background:#fff; border-radius:10px; min-height:52px; padding:5px 2px 6px;
+  display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer;
+  border:1.5px solid transparent;
+}
+.cal-cell.blank { background:none; cursor:default; }
+.cal-cell.weekend { background:#f8fafc; }
+.cal-cell .num { font-size:15px; font-weight:500; color:#333; line-height:1.3; }
+.cal-cell.today .num {
+  background:#1976d2; color:#fff; border-radius:50%; width:24px; height:24px;
+  display:flex; align-items:center; justify-content:center;
+}
+.cal-cell.has-note { border-color:#90caf9; }
+.cal-cell .dot-mark { width:6px; height:6px; border-radius:50%; background:#43a047; }
+.cal-cell .dot-mark.none { background:transparent; }
+.export-btn {
+  width:100%; margin-top:14px; border:1px solid #1976d2; background:#fff; color:#1976d2;
+  font-size:15px; font-weight:600; padding:12px 0; border-radius:12px; cursor:pointer;
+}
+.export-btn:active { background:#e3f2fd; }
+
+/* ===== 日记视图 ===== */
+.day-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.back-btn {
+  border:none; background:#fff; color:#1976d2; font-size:14px; font-weight:600;
+  padding:9px 14px; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.08); cursor:pointer;
+  white-space:nowrap;
+}
+.day-title { font-size:16px; font-weight:700; color:#1976d2; }
+.slot-card { border-radius:14px; padding:14px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+.slot-card.morning { background:#fff8e1; }
+.slot-card.afternoon { background:#e3f2fd; }
+.slot-card.evening { background:#f3e5f5; }
+.slot-name { font-size:16px; font-weight:700; margin-bottom:10px; color:#333; }
+.time-row { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.time-row label { font-size:13px; color:#5a6675; white-space:nowrap; }
+.time-row select {
+  flex:1; border:1px solid #d3dce8; border-radius:10px; padding:9px 10px; font-size:15px;
+  background:#fff; color:#222; min-height:44px;
+}
+.time-row .sep { color:#8a94a6; }
+.work-area, .people-input {
+  width:100%; border:1px solid #d3dce8; border-radius:10px; padding:10px 12px;
+  font-size:15px; line-height:1.6; background:#fff; color:#222; outline:none;
+  font-family:inherit;
+}
+.work-area { min-height:96px; resize:vertical; margin-bottom:10px; }
+.people-input { min-height:44px; margin-bottom:12px; }
+.work-area:focus, .people-input:focus, .time-row select:focus { border-color:#1976d2; }
+.save-btn {
+  width:100%; border:none; background:#1976d2; color:#fff; font-size:15px; font-weight:600;
+  padding:12px 0; border-radius:12px; cursor:pointer; min-height:46px;
+}
+.save-btn.saved { background:#43a047; }
+</style>
+</head>
+<body>
+<header class="appbar">病房纪要</header>
+<main id="main"></main>
+<script>
+/* ================= 数据 ================= */
+const LS_KEY = "wardNotes";
+const SLOTS = [
+  { key:"morning",   name:"上午", ico:"🌅", defStart:"08:00", defEnd:"12:00" },
+  { key:"afternoon", name:"下午", ico:"🌞", defStart:"14:00", defEnd:"17:00" },
+  { key:"evening",   name:"晚上", ico:"🌙", defStart:"19:00", defEnd:"21:00" }
+];
+function loadAll() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; }
+  catch(e) { return {}; }
+}
+function saveAll(d) { localStorage.setItem(LS_KEY, JSON.stringify(d)); }
+function pad(n){ return String(n).padStart(2,"0"); }
+function dateKey(y,m,d){ return y+"-"+pad(m+1)+"-"+pad(d); }
+function hasContent(rec) {
+  if (!rec) return false;
+  return SLOTS.some(s=>{
+    const r = rec[s.key];
+    return r && ((r.work && r.work.trim()) || (r.people && r.people.trim()));
+  });
+}
+
+/* ================= 公共 ================= */
+const main = document.getElementById("main");
+const today = new Date(); today.setHours(0,0,0,0);
+let calY = today.getFullYear(), calM = today.getMonth();
+let curDate = null; // Date 对象，当前查看的记录日
+
+function hourOptions(selected) {
+  let h = "";
+  for (let i=0;i<24;i++) {
+    const v = pad(i)+":00";
+    h += '<option value="'+v+'"'+(v===selected?" selected":"")+'>'+v+'</option>';
+  }
+  return h;
+}
+
+/* ================= 日历视图 ================= */
+function renderCalendar() {
+  curDate = null;
+  const data = loadAll();
+  const first = new Date(calY, calM, 1);
+  const daysInMonth = new Date(calY, calM+1, 0).getDate();
+  const offset = (first.getDay()+6)%7;
+
+  let html = '<div class="cal-head">'
+    + '<button onclick="changeMonth(-1)">‹</button>'
+    + '<div class="ym">'+calY+'年'+(calM+1)+'月</div>'
+    + '<button onclick="changeMonth(1)">›</button></div>';
+
+  html += '<div class="cal-grid">';
+  ["一","二","三","四","五","六","日"].forEach(d=>{ html += '<div class="dow">'+d+'</div>'; });
+  for (let i=0;i<offset;i++) html += '<div class="cal-cell blank"></div>';
+  for (let d=1; d<=daysInMonth; d++) {
+    const date = new Date(calY, calM, d);
+    const key = dateKey(calY, calM, d);
+    const noted = hasContent(data[key]);
+    let cls = "cal-cell";
+    if (date.getDay()===0 || date.getDay()===6) cls += " weekend";
+    if (date.getTime()===today.getTime()) cls += " today";
+    if (noted) cls += " has-note";
+    html += '<div class="'+cls+'" onclick="openDay('+d+')">'
+      + '<div class="num">'+d+'</div>'
+      + '<div class="dot-mark'+(noted?"":" none")+'"></div></div>';
+  }
+  html += '</div>';
+  html += '<button class="export-btn" onclick="exportMonth()">📄 导出本月记录</button>';
+  main.innerHTML = html;
+}
+function changeMonth(delta) {
+  calM += delta;
+  if (calM<0) { calM=11; calY--; }
+  if (calM>11) { calM=0; calY++; }
+  renderCalendar();
+}
+function openDay(d) {
+  curDate = new Date(calY, calM, d);
+  renderDay();
+}
+
+/* ================= 日记视图 ================= */
+function getSlotData(key, slotKey) {
+  const all = loadAll();
+  const rec = all[key] || {};
+  const s = SLOTS.find(x=>x.key===slotKey);
+  const r = rec[slotKey] || {};
+  return {
+    start: r.start || s.defStart,
+    end: r.end || s.defEnd,
+    work: r.work || "",
+    people: r.people || ""
+  };
+}
+
+function renderDay() {
+  const y = curDate.getFullYear(), m = curDate.getMonth(), d = curDate.getDate();
+  const key = dateKey(y, m, d);
+  const WD = ["日","一","二","三","四","五","六"];
+
+  let html = '<div class="day-head">'
+    + '<button class="back-btn" onclick="renderCalendar()">← 返回日历</button>'
+    + '<div class="day-title">'+y+'年'+(m+1)+'月'+d+'日 周'+WD[curDate.getDay()]+'</div>'
+    + '</div>';
+
+  SLOTS.forEach(s=>{
+    const v = getSlotData(key, s.key);
+    html += '<div class="slot-card '+s.key+'">'
+      + '<div class="slot-name">'+s.ico+' '+s.name+'</div>'
+      + '<div class="time-row">'
+      + '<label>开始</label><select id="'+s.key+'-start">'+hourOptions(v.start)+'</select>'
+      + '<span class="sep">~</span>'
+      + '<label>结束</label><select id="'+s.key+'-end">'+hourOptions(v.end)+'</select>'
+      + '</div>'
+      + '<textarea class="work-area" id="'+s.key+'-work" placeholder="记录今天做了什么…" onblur="autoSave(\''+s.key+'\')">'+escapeHtml(v.work)+'</textarea>'
+      + '<input class="people-input" id="'+s.key+'-people" placeholder="见了谁…" value="'+escapeHtml(v.people)+'" onblur="autoSave(\''+s.key+'\')">'
+      + '<button class="save-btn" id="'+s.key+'-btn" onclick="saveSlot(\''+s.key+'\',true)">保存</button>'
+      + '</div>';
+  });
+  main.innerHTML = html;
+}
+
+function escapeHtml(t) {
+  return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function collectSlot(slotKey) {
+  return {
+    start: document.getElementById(slotKey+"-start").value,
+    end: document.getElementById(slotKey+"-end").value,
+    work: document.getElementById(slotKey+"-work").value,
+    people: document.getElementById(slotKey+"-people").value
+  };
+}
+
+function saveSlot(slotKey, feedback) {
+  const key = dateKey(curDate.getFullYear(), curDate.getMonth(), curDate.getDate());
+  const all = loadAll();
+  if (!all[key]) all[key] = {};
+  all[key][slotKey] = collectSlot(slotKey);
+  saveAll(all);
+  if (feedback) {
+    const btn = document.getElementById(slotKey+"-btn");
+    btn.textContent = "已保存 ✓";
+    btn.classList.add("saved");
+    setTimeout(()=>{ btn.textContent = "保存"; btn.classList.remove("saved"); }, 1200);
+  }
+}
+function autoSave(slotKey) { saveSlot(slotKey, false); }
+
+/* ================= 导出本月 ================= */
+function exportMonth() {
+  const data = loadAll();
+  const daysInMonth = new Date(calY, calM+1, 0).getDate();
+  const WD = ["日","一","二","三","四","五","六"];
+  let lines = ["病房纪要导出：" + calY + "年" + (calM+1) + "月", ""];
+  let count = 0;
+  for (let d=1; d<=daysInMonth; d++) {
+    const key = dateKey(calY, calM, d);
+    const rec = data[key];
+    if (!hasContent(rec)) continue;
+    count++;
+    const wd = new Date(calY, calM, d).getDay();
+    lines.push("【"+key+" 周"+WD[wd]+"】");
+    SLOTS.forEach(s=>{
+      const r = rec[s.key];
+      if (!r || (!r.work.trim() && !r.people.trim())) return;
+      lines.push(s.ico + " " + s.name + "（" + (r.start||s.defStart) + " ~ " + (r.end||s.defEnd) + "）");
+      if (r.work.trim()) lines.push("  工作：" + r.work.trim());
+      if (r.people.trim()) lines.push("  会见：" + r.people.trim());
+    });
+    lines.push("");
+  }
+  if (!count) { alert("本月还没有任何记录"); return; }
+  const blob = new Blob(["\ufeff" + lines.join("\n")], {type:"text/plain;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "病房纪要-" + calY + "-" + pad(calM+1) + ".txt";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+/* ================= PWA ================= */
+if ("serviceWorker" in navigator && location.protocol.indexOf("http")===0) {
+  navigator.serviceWorker.register("sw.js").catch(()=>{});
+}
+
+/* ================= 启动 ================= */
+renderCalendar();
+</script>
+</body>
+</html>
