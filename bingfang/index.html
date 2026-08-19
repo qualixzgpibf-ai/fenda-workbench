@@ -586,7 +586,7 @@ function saveAICfg() {
 }
 
 /* 发起一次 AI 请求，成功返回 {text}，失败返回 {err: 原因} */
-async function callAI(cfg, content, timeoutMs) {
+async function callAIOnce(cfg, content, timeoutMs) {
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(()=>ctrl.abort(), timeoutMs || 30000);
@@ -606,7 +606,7 @@ async function callAI(cfg, content, timeoutMs) {
       if (resp.status===401) msg += "（Key 无效或带有多余空格）";
       if (resp.status===404) msg += "（模型名错误或该账号无此模型权限）";
       if (resp.status===429) msg += "（超出频率/额度限制）";
-      return { err: msg };
+      return { err: msg, status: resp.status };
     }
     const data = await resp.json();
     const text = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
@@ -616,6 +616,20 @@ async function callAI(cfg, content, timeoutMs) {
     if (e.name === "AbortError") return { err: "请求超时（网络不通或被浏览器拦截）" };
     return { err: "网络错误：" + (e.message || e.name) + "（可能是跨域被拦或断网）" };
   }
+}
+
+function sleep(ms) { return new Promise(r=>setTimeout(r, ms)); }
+
+/* 发起一次 AI 请求，成功返回 {text}，失败返回 {err: 原因}；429 自动重试（覆盖并发占满的长请求） */
+async function callAI(cfg, content, timeoutMs) {
+  let r = null;
+  for (let attempt=1; attempt<=4; attempt++) {
+    r = await callAIOnce(cfg, content, timeoutMs);
+    if (!r.err) return r;
+    if (r.status !== 429) return r;   // 只有频率限制才重试
+    if (attempt < 4) await sleep(attempt * 4000);
+  }
+  return { err: r.err + "（已自动重试 4 次仍失败，请稍后再点一次）" };
 }
 
 async function testAIConnection() {
