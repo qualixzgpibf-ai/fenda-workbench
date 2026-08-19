@@ -1,4 +1,4 @@
-const CACHE = "ward-notes-v2";
+const CACHE = "ward-notes-v3";
 const ASSETS = [
   "./",
   "./index.html",

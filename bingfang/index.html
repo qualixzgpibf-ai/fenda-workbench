@@ -500,6 +500,7 @@ function exportMonth() {
 /* ================= AI 生成日报 ================= */
 // 配置存 localStorage（base64 混淆，仅本机浏览器，不上传服务器）
 const AI_PROVIDERS = {
+  moonshot: { name:"Kimi（月之暗面）", base:"https://api.moonshot.cn/v1", model:"moonshot-v1-8k" },
   deepseek: { name:"DeepSeek", base:"https://api.deepseek.com/v1", model:"deepseek-chat" },
   openai:   { name:"OpenAI", base:"https://api.openai.com/v1", model:"gpt-4o-mini" },
   custom:   { name:"自定义（OpenAI 兼容）", base:"", model:"" }
