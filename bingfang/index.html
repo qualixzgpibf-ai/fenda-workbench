@@ -26,6 +26,7 @@ header.appbar {
   box-shadow:0 2px 6px rgba(0,0,0,.12); z-index:10;
 }
 main { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px 12px 20px; }
+button { font-family:inherit; }
 
 /* ===== 日历视图 ===== */
 .cal-head { display:flex; align-items:center; justify-content:space-between; padding:4px 6px 12px; }
@@ -34,6 +35,12 @@ main { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px 1
   border:none; background:#fff; color:#1976d2; font-size:20px; width:42px; height:38px;
   border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.08); cursor:pointer;
 }
+.search-box { padding:0 2px 10px; }
+.search-box input {
+  width:100%; border:1px solid #d3dce8; border-radius:20px; padding:9px 16px;
+  font-size:15px; background:#fff; outline:none; color:#222;
+}
+.search-box input:focus { border-color:#1976d2; }
 .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
 .cal-grid .dow { text-align:center; font-size:12px; color:#8a94a6; padding:4px 0; }
 .cal-cell {
@@ -51,11 +58,19 @@ main { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px 1
 .cal-cell.has-note { border-color:#90caf9; }
 .cal-cell .dot-mark { width:6px; height:6px; border-radius:50%; background:#43a047; }
 .cal-cell .dot-mark.none { background:transparent; }
-.export-btn {
-  width:100%; margin-top:14px; border:1px solid #1976d2; background:#fff; color:#1976d2;
+.cal-actions { display:flex; gap:10px; margin-top:14px; }
+.cal-actions button {
+  flex:1; border:1px solid #1976d2; background:#fff; color:#1976d2;
   font-size:15px; font-weight:600; padding:12px 0; border-radius:12px; cursor:pointer;
 }
-.export-btn:active { background:#e3f2fd; }
+.cal-actions button:active { background:#e3f2fd; }
+.search-result { margin-top:12px; background:#fff; border-radius:12px; padding:12px 14px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+.search-result h3 { font-size:15px; margin-bottom:8px; color:#1976d2; }
+.sr-item { padding:8px 2px; border-bottom:1px solid #f0f3f7; cursor:pointer; }
+.sr-item:last-child { border-bottom:none; }
+.sr-item .sr-date { font-size:12px; color:#1976d2; font-weight:600; margin-bottom:2px; }
+.sr-item .sr-text { font-size:14px; color:#333; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sr-item .sr-people { font-size:12px; color:#8a94a6; }
 
 /* ===== 日记视图 ===== */
 .day-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
@@ -64,66 +79,201 @@ main { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px 1
   padding:9px 14px; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.08); cursor:pointer;
   white-space:nowrap;
 }
-.day-title { font-size:16px; font-weight:700; color:#1976d2; }
+.day-title { font-size:16px; font-weight:700; color:#1976d2; flex:1; }
 .slot-card { border-radius:14px; padding:14px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
 .slot-card.morning { background:#fff8e1; }
 .slot-card.afternoon { background:#e3f2fd; }
 .slot-card.evening { background:#f3e5f5; }
 .slot-name { font-size:16px; font-weight:700; margin-bottom:10px; color:#333; }
-.time-row { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
-.time-row label { font-size:13px; color:#5a6675; white-space:nowrap; }
-.time-row select {
-  flex:1; border:1px solid #d3dce8; border-radius:10px; padding:9px 10px; font-size:15px;
-  background:#fff; color:#222; min-height:44px;
+.empty-slot { font-size:13px; color:#a0a8b5; text-align:center; padding:10px 0; }
+.rec-card {
+  background:#fff; border-radius:12px; padding:10px 12px; margin-bottom:10px;
+  box-shadow:0 1px 4px rgba(0,0,0,.08);
 }
-.time-row .sep { color:#8a94a6; }
-.work-area, .people-input {
-  width:100%; border:1px solid #d3dce8; border-radius:10px; padding:10px 12px;
-  font-size:15px; line-height:1.6; background:#fff; color:#222; outline:none;
-  font-family:inherit;
+.rec-top { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.rec-time {
+  border:1px solid #1976d2; border-radius:10px; padding:7px 10px; font-size:16px;
+  font-weight:700; color:#1976d2; background:#fff; min-height:42px; flex:1;
 }
-.work-area { min-height:96px; resize:vertical; margin-bottom:10px; }
-.people-input { min-height:44px; margin-bottom:12px; }
-.work-area:focus, .people-input:focus, .time-row select:focus { border-color:#1976d2; }
-.save-btn {
+.rec-del {
+  border:none; background:#ffebee; color:#c62828; font-size:13px; padding:8px 12px;
+  border-radius:10px; cursor:pointer; white-space:nowrap; min-height:42px;
+}
+.rec-work, .rec-people {
+  width:100%; border:1px solid #d3dce8; border-radius:10px; padding:9px 12px;
+  font-size:15px; line-height:1.6; background:#fff; color:#222; outline:none; font-family:inherit;
+}
+.rec-work { min-height:64px; resize:vertical; margin-bottom:8px; }
+.rec-people { min-height:42px; }
+.rec-work:focus, .rec-people:focus, .rec-time:focus { border-color:#1976d2; }
+.rec-saved { font-size:11px; color:#43a047; text-align:right; height:14px; margin-top:3px; opacity:0; transition:opacity .3s; }
+.rec-saved.show { opacity:1; }
+.add-btn {
+  width:100%; border:1.5px dashed #90a4ae; background:rgba(255,255,255,.6); color:#546e7a;
+  font-size:14px; font-weight:600; padding:11px 0; border-radius:12px; cursor:pointer; min-height:46px;
+}
+.add-btn:active { background:#fff; }
+.day-export {
+  width:100%; margin-bottom:14px; border:1px solid #1976d2; background:#fff; color:#1976d2;
+  font-size:14px; font-weight:600; padding:11px 0; border-radius:12px; cursor:pointer;
+}
+
+/* ===== AI 日报 ===== */
+.ai-card { background:#fff; border-radius:14px; padding:14px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+.ai-card h3 { font-size:16px; margin-bottom:10px; color:#333; }
+.ai-config { background:#f6f9fc; border-radius:10px; padding:10px 12px; margin-bottom:10px; }
+.ai-config .cfg-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.ai-config .cfg-row:last-child { margin-bottom:0; }
+.ai-config label { font-size:13px; color:#5a6675; width:52px; flex-shrink:0; }
+.ai-config select, .ai-config input {
+  flex:1; border:1px solid #d3dce8; border-radius:8px; padding:8px 10px; font-size:14px;
+  background:#fff; outline:none; min-height:40px;
+}
+.ai-config .cfg-note { font-size:11px; color:#99a3b0; margin-top:6px; }
+.ai-config-toggle { font-size:13px; color:#1976d2; background:none; border:none; cursor:pointer; padding:4px 0 8px; }
+.ai-gen-btn {
   width:100%; border:none; background:#1976d2; color:#fff; font-size:15px; font-weight:600;
   padding:12px 0; border-radius:12px; cursor:pointer; min-height:46px;
 }
-.save-btn.saved { background:#43a047; }
+.ai-gen-btn:disabled { background:#90caf9; }
+.summary-box {
+  margin-top:12px; border:1.5px solid #90caf9; border-radius:12px; padding:12px;
+  background:#f6fbff; font-size:14px; line-height:1.7; white-space:pre-wrap; word-break:break-word;
+}
+.summary-box .local-tag { display:block; font-size:11px; color:#e65100; margin-bottom:6px; }
+.summary-actions { display:flex; gap:10px; margin-top:10px; }
+.summary-actions button {
+  flex:1; border:1px solid #1976d2; background:#fff; color:#1976d2; font-size:13px;
+  font-weight:600; padding:9px 0; border-radius:10px; cursor:pointer;
+}
+
+/* ===== 周期回顾视图 ===== */
+.review-filter { background:#fff; border-radius:12px; padding:12px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+.review-filter .fr-row { display:flex; gap:10px; margin-bottom:10px; }
+.review-filter select {
+  flex:1; border:1px solid #d3dce8; border-radius:10px; padding:10px; font-size:15px;
+  background:#fff; min-height:44px; outline:none;
+}
+.review-filter .go-btn {
+  width:100%; border:none; background:#1976d2; color:#fff; font-size:15px; font-weight:600;
+  padding:12px 0; border-radius:12px; cursor:pointer; min-height:46px;
+}
+.review-head { display:flex; align-items:center; justify-content:space-between; margin:4px 2px 10px; }
+.review-head .rh-title { font-size:15px; font-weight:700; color:#1976d2; }
+.review-head .rh-actions { display:flex; gap:6px; }
+.review-head .rh-actions button {
+  border:1px solid #d3dce8; background:#fff; color:#5a6675; font-size:12px;
+  padding:6px 10px; border-radius:8px; cursor:pointer;
+}
+.timeline { position:relative; padding-left:18px; }
+.timeline::before {
+  content:""; position:absolute; left:5px; top:8px; bottom:8px; width:2px; background:#bbdefb; border-radius:1px;
+}
+.time-group { position:relative; margin-bottom:14px; }
+.time-group::before {
+  content:""; position:absolute; left:-17px; top:10px; width:10px; height:10px;
+  border-radius:50%; background:#1976d2; border:2px solid #fff; box-shadow:0 0 0 2px #bbdefb;
+}
+.time-tag {
+  display:inline-flex; align-items:center; gap:6px; background:#1976d2; color:#fff;
+  font-size:15px; font-weight:700; padding:5px 14px; border-radius:16px; margin-bottom:8px;
+}
+.time-tag .fire { font-size:11px; background:#ff7043; border-radius:8px; padding:1px 6px; font-weight:600; }
+.tg-rec {
+  background:#fff; border-radius:10px; padding:9px 12px; margin-bottom:6px;
+  box-shadow:0 1px 3px rgba(0,0,0,.05); display:flex; align-items:center; gap:8px;
+}
+.tg-rec.alt { background:#f4f8fd; }
+.tg-rec .tg-body { flex:1; min-width:0; }
+.tg-rec .tg-date { font-size:12px; color:#1976d2; font-weight:600; }
+.tg-rec .tg-work { font-size:14px; color:#333; line-height:1.5; word-break:break-word; }
+.tg-rec .tg-people { font-size:12px; color:#8a94a6; }
+.tg-rec .tg-jump {
+  border:none; background:#e3f2fd; color:#1976d2; font-size:12px; padding:6px 10px;
+  border-radius:8px; cursor:pointer; white-space:nowrap; flex-shrink:0;
+}
+.review-stats {
+  background:#fff; border-radius:12px; padding:12px 14px; margin-top:4px;
+  font-size:13px; color:#5a6675; box-shadow:0 1px 4px rgba(0,0,0,.06); line-height:1.8;
+}
+.review-stats b { color:#1976d2; }
+.empty-tip { color:#99a; font-size:14px; text-align:center; padding:20px 0; }
 </style>
 </head>
 <body>
 <header class="appbar">病房纪要</header>
 <main id="main"></main>
 <script>
-/* ================= 数据 ================= */
-const LS_KEY = "wardNotes";
+/* ================= 数据层（IndexedDB） ================= */
+// 结构：{ date:"2026-08-19", morning:[{time,work,people}], afternoon:[...], evening:[...], summary:"" }
 const SLOTS = [
-  { key:"morning",   name:"上午", ico:"🌅", defStart:"08:00", defEnd:"12:00" },
-  { key:"afternoon", name:"下午", ico:"🌞", defStart:"14:00", defEnd:"17:00" },
-  { key:"evening",   name:"晚上", ico:"🌙", defStart:"19:00", defEnd:"21:00" }
+  { key:"morning",   name:"上午", ico:"🌅", defTime:"09:00" },
+  { key:"afternoon", name:"下午", ico:"🌞", defTime:"15:00" },
+  { key:"evening",   name:"晚上", ico:"🌙", defTime:"20:00" }
 ];
-function loadAll() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; }
-  catch(e) { return {}; }
+const WD_NAMES = ["周日","周一","周二","周三","周四","周五","周六"];
+let db = null;
+let ALL = {}; // 内存缓存：date -> record
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open("wardNotesDB", 1);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains("notes")) d.createObjectStore("notes", { keyPath:"date" });
+    };
+    req.onsuccess = e => { db = e.target.result; resolve(); };
+    req.onerror = () => reject(req.error);
+  });
 }
-function saveAll(d) { localStorage.setItem(LS_KEY, JSON.stringify(d)); }
-function pad(n){ return String(n).padStart(2,"0"); }
-function dateKey(y,m,d){ return y+"-"+pad(m+1)+"-"+pad(d); }
+function idbPut(rec) {
+  return new Promise(res => {
+    const r = db.transaction("notes","readwrite").objectStore("notes").put(rec);
+    r.onsuccess = () => res(); r.onerror = () => res();
+  });
+}
+function idbAll() {
+  return new Promise(res => {
+    const r = db.transaction("notes","readonly").objectStore("notes").getAll();
+    r.onsuccess = () => res(r.result || []); r.onerror = () => res([]);
+  });
+}
+function emptyRec(date) { return { date:date, morning:[], afternoon:[], evening:[], summary:"" }; }
+function getRec(date) { return ALL[date] || emptyRec(date); }
 function hasContent(rec) {
   if (!rec) return false;
-  return SLOTS.some(s=>{
-    const r = rec[s.key];
-    return r && ((r.work && r.work.trim()) || (r.people && r.people.trim()));
-  });
+  return SLOTS.some(s => (rec[s.key]||[]).some(r => (r.work&&r.work.trim()) || (r.people&&r.people.trim())));
+}
+
+/* ---- v1 localStorage → v2 IndexedDB 迁移（只执行一次） ---- */
+async function migrateV1() {
+  if (localStorage.getItem("wardNotes_migrated")) return;
+  let v1 = null;
+  try { v1 = JSON.parse(localStorage.getItem("wardNotes")); } catch(e) {}
+  localStorage.setItem("wardNotes_migrated", "1");
+  if (!v1) return;
+  for (const date of Object.keys(v1)) {
+    const old = v1[date];
+    const rec = emptyRec(date);
+    SLOTS.forEach(s => {
+      const r = old[s.key];
+      if (r && ((r.work && r.work.trim()) || (r.people && r.people.trim())))
+        rec[s.key].push({ time: r.start || s.defTime, work: r.work || "", people: r.people || "" });
+    });
+    if (hasContent(rec)) { ALL[date] = rec; await idbPut(rec); }
+  }
 }
 
 /* ================= 公共 ================= */
 const main = document.getElementById("main");
 const today = new Date(); today.setHours(0,0,0,0);
 let calY = today.getFullYear(), calM = today.getMonth();
-let curDate = null; // Date 对象，当前查看的记录日
+let curDate = null;
+let searchQ = "";
 
+function pad(n){ return String(n).padStart(2,"0"); }
+function dateKey(y,m,d){ return y+"-"+pad(m+1)+"-"+pad(d); }
+function escapeHtml(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function hourOptions(selected) {
   let h = "";
   for (let i=0;i<24;i++) {
@@ -132,11 +282,22 @@ function hourOptions(selected) {
   }
   return h;
 }
+function fmtCN(key) { // "2026-08-05" -> "8月5日"
+  const p = key.split("-");
+  return parseInt(p[1])+"月"+parseInt(p[2])+"日";
+}
+function weekId(key) { // 用于"横跨 N 周"统计：该日期所在周的周一
+  const d = new Date(key+"T00:00:00");
+  d.setDate(d.getDate() - (d.getDay()+6)%7);
+  return dateKey(d.getFullYear(), d.getMonth(), d.getDate());
+}
+function debounce(fn, ms) {
+  let t; return function(){ clearTimeout(t); const a=arguments, s=this; t=setTimeout(()=>fn.apply(s,a), ms); };
+}
 
 /* ================= 日历视图 ================= */
 function renderCalendar() {
   curDate = null;
-  const data = loadAll();
   const first = new Date(calY, calM, 1);
   const daysInMonth = new Date(calY, calM+1, 0).getDate();
   const offset = (first.getDay()+6)%7;
@@ -146,13 +307,16 @@ function renderCalendar() {
     + '<div class="ym">'+calY+'年'+(calM+1)+'月</div>'
     + '<button onclick="changeMonth(1)">›</button></div>';
 
+  html += '<div class="search-box"><input type="search" placeholder="🔍 搜索历史记录关键词" value="'
+    + escapeHtml(searchQ) + '" oninput="doSearch(this.value)"></div>';
+
   html += '<div class="cal-grid">';
   ["一","二","三","四","五","六","日"].forEach(d=>{ html += '<div class="dow">'+d+'</div>'; });
   for (let i=0;i<offset;i++) html += '<div class="cal-cell blank"></div>';
   for (let d=1; d<=daysInMonth; d++) {
     const date = new Date(calY, calM, d);
     const key = dateKey(calY, calM, d);
-    const noted = hasContent(data[key]);
+    const noted = hasContent(ALL[key]);
     let cls = "cal-cell";
     if (date.getDay()===0 || date.getDay()===6) cls += " weekend";
     if (date.getTime()===today.getTime()) cls += " today";
@@ -162,8 +326,15 @@ function renderCalendar() {
       + '<div class="dot-mark'+(noted?"":" none")+'"></div></div>';
   }
   html += '</div>';
-  html += '<button class="export-btn" onclick="exportMonth()">📄 导出本月记录</button>';
+
+  html += '<div class="cal-actions">'
+    + '<button onclick="renderReview()">📊 周期回顾</button>'
+    + '<button onclick="exportMonth()">📄 导出本月</button>'
+    + '</div>';
+
+  html += '<div id="searchResult"></div>';
   main.innerHTML = html;
+  applySearch();
 }
 function changeMonth(delta) {
   calM += delta;
@@ -171,112 +342,448 @@ function changeMonth(delta) {
   if (calM>11) { calM=0; calY++; }
   renderCalendar();
 }
-function openDay(d) {
-  curDate = new Date(calY, calM, d);
+function openDay(d) { curDate = new Date(calY, calM, d); renderDay(); }
+function openDayByKey(key) {
+  const p = key.split("-").map(Number);
+  calY = p[0]; calM = p[1]-1;
+  curDate = new Date(p[0], p[1]-1, p[2]);
   renderDay();
 }
 
+/* ---- 历史记录搜索 ---- */
+function doSearch(q) { searchQ = q.trim(); applySearch(); }
+function applySearch() {
+  const box = document.getElementById("searchResult");
+  if (!box) return;
+  if (!searchQ) { box.innerHTML = ""; return; }
+  const hits = [];
+  Object.keys(ALL).sort().forEach(date => {
+    const rec = ALL[date];
+    SLOTS.forEach(s => {
+      (rec[s.key]||[]).forEach(r => {
+        if ((r.work && r.work.includes(searchQ)) || (r.people && r.people.includes(searchQ)))
+          hits.push({ date:date, slot:s, r:r });
+      });
+    });
+  });
+  let html = '<div class="search-result"><h3>“'+escapeHtml(searchQ)+'”找到 '+hits.length+' 条记录</h3>';
+  if (!hits.length) html += '<div class="empty-tip">没有匹配的记录</div>';
+  hits.forEach(h => {
+    html += '<div class="sr-item" onclick="openDayByKey(\''+h.date+'\')">'
+      + '<div class="sr-date">'+h.date+' '+WD_NAMES[new Date(h.date+"T00:00:00").getDay()]+' · '+h.slot.ico+' '+h.slot.name+' '+h.r.time+'</div>'
+      + '<div class="sr-text">'+escapeHtml(h.r.work||"（无工作内容）")+'</div>'
+      + (h.r.people ? '<div class="sr-people">人员：'+escapeHtml(h.r.people)+'</div>' : '')
+      + '</div>';
+  });
+  html += '</div>';
+  box.innerHTML = html;
+}
+
 /* ================= 日记视图 ================= */
-function getSlotData(key, slotKey) {
-  const all = loadAll();
-  const rec = all[key] || {};
-  const s = SLOTS.find(x=>x.key===slotKey);
-  const r = rec[slotKey] || {};
-  return {
-    start: r.start || s.defStart,
-    end: r.end || s.defEnd,
-    work: r.work || "",
-    people: r.people || ""
-  };
+const debouncedSave = debounce(saveCurDate, 500);
+
+function saveCurDate() {
+  const key = dateKey(curDate.getFullYear(), curDate.getMonth(), curDate.getDate());
+  idbPut(ALL[key]);
 }
 
 function renderDay() {
   const y = curDate.getFullYear(), m = curDate.getMonth(), d = curDate.getDate();
   const key = dateKey(y, m, d);
-  const WD = ["日","一","二","三","四","五","六"];
+  if (!ALL[key]) ALL[key] = emptyRec(key);
+  const rec = ALL[key];
 
   let html = '<div class="day-head">'
     + '<button class="back-btn" onclick="renderCalendar()">← 返回日历</button>'
-    + '<div class="day-title">'+y+'年'+(m+1)+'月'+d+'日 周'+WD[curDate.getDay()]+'</div>'
+    + '<div class="day-title">'+y+'年'+(m+1)+'月'+d+'日 周'+WD_NAMES[curDate.getDay()].slice(1)+'</div>'
     + '</div>';
 
-  SLOTS.forEach(s=>{
-    const v = getSlotData(key, s.key);
+  SLOTS.forEach(s => {
+    const list = rec[s.key] || [];
     html += '<div class="slot-card '+s.key+'">'
-      + '<div class="slot-name">'+s.ico+' '+s.name+'</div>'
-      + '<div class="time-row">'
-      + '<label>开始</label><select id="'+s.key+'-start">'+hourOptions(v.start)+'</select>'
-      + '<span class="sep">~</span>'
-      + '<label>结束</label><select id="'+s.key+'-end">'+hourOptions(v.end)+'</select>'
-      + '</div>'
-      + '<textarea class="work-area" id="'+s.key+'-work" placeholder="记录今天做了什么…" onblur="autoSave(\''+s.key+'\')">'+escapeHtml(v.work)+'</textarea>'
-      + '<input class="people-input" id="'+s.key+'-people" placeholder="见了谁…" value="'+escapeHtml(v.people)+'" onblur="autoSave(\''+s.key+'\')">'
-      + '<button class="save-btn" id="'+s.key+'-btn" onclick="saveSlot(\''+s.key+'\',true)">保存</button>'
+      + '<div class="slot-name">'+s.ico+' '+s.name+'</div>';
+    if (!list.length) html += '<div class="empty-slot">'+s.name+'暂无记录，点击添加</div>';
+    list.forEach((r, idx) => {
+      html += '<div class="rec-card">'
+        + '<div class="rec-top">'
+        + '<select class="rec-time" id="'+s.key+'-'+idx+'-time" onchange="updateRecord(\''+s.key+'\','+idx+')">'+hourOptions(r.time || s.defTime)+'</select>'
+        + '<button class="rec-del" onclick="deleteRecord(\''+s.key+'\','+idx+')">删除</button>'
+        + '</div>'
+        + '<textarea class="rec-work" id="'+s.key+'-'+idx+'-work" placeholder="做了什么…" oninput="updateRecord(\''+s.key+'\','+idx+')">'+escapeHtml(r.work||"")+'</textarea>'
+        + '<input class="rec-people" id="'+s.key+'-'+idx+'-people" placeholder="见了谁…" value="'+escapeHtml(r.people||"")+'" oninput="updateRecord(\''+s.key+'\','+idx+')">'
+        + '<div class="rec-saved" id="'+s.key+'-'+idx+'-saved">已自动保存 ✓</div>'
+        + '</div>';
+    });
+    html += '<button class="add-btn" onclick="addRecord(\''+s.key+'\')">+ 添加记录</button>'
       + '</div>';
   });
+
+  html += '<button class="day-export" onclick="exportDay()">📄 导出当日记录</button>';
+  html += renderAICard(rec);
   main.innerHTML = html;
 }
 
-function escapeHtml(t) {
-  return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-}
-
-function collectSlot(slotKey) {
-  return {
-    start: document.getElementById(slotKey+"-start").value,
-    end: document.getElementById(slotKey+"-end").value,
-    work: document.getElementById(slotKey+"-work").value,
-    people: document.getElementById(slotKey+"-people").value
-  };
-}
-
-function saveSlot(slotKey, feedback) {
+function updateRecord(slotKey, idx) {
   const key = dateKey(curDate.getFullYear(), curDate.getMonth(), curDate.getDate());
-  const all = loadAll();
-  if (!all[key]) all[key] = {};
-  all[key][slotKey] = collectSlot(slotKey);
-  saveAll(all);
-  if (feedback) {
-    const btn = document.getElementById(slotKey+"-btn");
-    btn.textContent = "已保存 ✓";
-    btn.classList.add("saved");
-    setTimeout(()=>{ btn.textContent = "保存"; btn.classList.remove("saved"); }, 1200);
-  }
+  const rec = ALL[key];
+  rec[slotKey][idx] = {
+    time: document.getElementById(slotKey+"-"+idx+"-time").value,
+    work: document.getElementById(slotKey+"-"+idx+"-work").value,
+    people: document.getElementById(slotKey+"-"+idx+"-people").value
+  };
+  debouncedSave();
+  const tag = document.getElementById(slotKey+"-"+idx+"-saved");
+  tag.classList.add("show");
+  clearTimeout(tag._t);
+  tag._t = setTimeout(()=>tag.classList.remove("show"), 1200);
 }
-function autoSave(slotKey) { saveSlot(slotKey, false); }
 
-/* ================= 导出本月 ================= */
-function exportMonth() {
-  const data = loadAll();
-  const daysInMonth = new Date(calY, calM+1, 0).getDate();
-  const WD = ["日","一","二","三","四","五","六"];
-  let lines = ["病房纪要导出：" + calY + "年" + (calM+1) + "月", ""];
-  let count = 0;
-  for (let d=1; d<=daysInMonth; d++) {
-    const key = dateKey(calY, calM, d);
-    const rec = data[key];
-    if (!hasContent(rec)) continue;
-    count++;
-    const wd = new Date(calY, calM, d).getDay();
-    lines.push("【"+key+" 周"+WD[wd]+"】");
-    SLOTS.forEach(s=>{
-      const r = rec[s.key];
-      if (!r || (!r.work.trim() && !r.people.trim())) return;
-      lines.push(s.ico + " " + s.name + "（" + (r.start||s.defStart) + " ~ " + (r.end||s.defEnd) + "）");
-      if (r.work.trim()) lines.push("  工作：" + r.work.trim());
-      if (r.people.trim()) lines.push("  会见：" + r.people.trim());
+function addRecord(slotKey) {
+  const key = dateKey(curDate.getFullYear(), curDate.getMonth(), curDate.getDate());
+  const s = SLOTS.find(x=>x.key===slotKey);
+  ALL[key][slotKey].push({ time: s.defTime, work: "", people: "" });
+  saveCurDate();
+  renderDay();
+}
+
+function deleteRecord(slotKey, idx) {
+  if (!confirm("删除这条记录？")) return;
+  const key = dateKey(curDate.getFullYear(), curDate.getMonth(), curDate.getDate());
+  ALL[key][slotKey].splice(idx, 1);
+  saveCurDate();
+  renderDay();
+}
+
+/* ================= 导出 ================= */
+function buildDayText(key) {
+  const rec = ALL[key];
+  if (!hasContent(rec)) return null;
+  const d = new Date(key+"T00:00:00");
+  const lines = ["【"+key+" "+WD_NAMES[d.getDay()]+"】"];
+  SLOTS.forEach(s => {
+    (rec[s.key]||[]).forEach(r => {
+      if (!(r.work&&r.work.trim()) && !(r.people&&r.people.trim())) return;
+      lines.push(s.ico+" "+s.name+" "+(r.time||""));
+      if (r.work && r.work.trim()) lines.push("  工作："+r.work.trim());
+      if (r.people && r.people.trim()) lines.push("  会见："+r.people.trim());
     });
-    lines.push("");
-  }
-  if (!count) { alert("本月还没有任何记录"); return; }
-  const blob = new Blob(["\ufeff" + lines.join("\n")], {type:"text/plain;charset=utf-8"});
+  });
+  if (rec.summary) { lines.push("🤖 日报："); lines.push(rec.summary); }
+  return lines.join("\n");
+}
+function downloadText(filename, text) {
+  const blob = new Blob(["\ufeff"+text], { type:"text/plain;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "病房纪要-" + calY + "-" + pad(calM+1) + ".txt";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(a.href);
+}
+function exportDay() {
+  const key = dateKey(curDate.getFullYear(), curDate.getMonth(), curDate.getDate());
+  const text = buildDayText(key);
+  if (!text) { alert("当日还没有任何记录"); return; }
+  downloadText("病房纪要-"+key+".txt", text+"\n");
+}
+function exportMonth() {
+  const daysInMonth = new Date(calY, calM+1, 0).getDate();
+  const parts = ["病房纪要导出："+calY+"年"+(calM+1)+"月", ""];
+  let count = 0;
+  for (let d=1; d<=daysInMonth; d++) {
+    const t = buildDayText(dateKey(calY, calM, d));
+    if (t) { count++; parts.push(t, ""); }
+  }
+  if (!count) { alert("本月还没有任何记录"); return; }
+  downloadText("病房纪要-"+calY+"-"+pad(calM+1)+".txt", parts.join("\n"));
+}
+
+/* ================= AI 生成日报 ================= */
+// 配置存 localStorage（base64 混淆，仅本机浏览器，不上传服务器）
+const AI_PROVIDERS = {
+  deepseek: { name:"DeepSeek", base:"https://api.deepseek.com/v1", model:"deepseek-chat" },
+  openai:   { name:"OpenAI", base:"https://api.openai.com/v1", model:"gpt-4o-mini" },
+  custom:   { name:"自定义（OpenAI 兼容）", base:"", model:"" }
+};
+function aiCfg() {
+  const p = localStorage.getItem("wn_ai_provider") || "";
+  let key = "";
+  try { key = atob(localStorage.getItem("wn_ai_key_b64") || ""); } catch(e) {}
+  return {
+    provider: p,
+    base: localStorage.getItem("wn_ai_base") || (AI_PROVIDERS[p] ? AI_PROVIDERS[p].base : ""),
+    model: localStorage.getItem("wn_ai_model") || (AI_PROVIDERS[p] ? AI_PROVIDERS[p].model : ""),
+    key: key
+  };
+}
+let aiCfgOpen = false;
+
+function renderAICard(rec) {
+  const cfg = aiCfg();
+  let html = '<div class="ai-card"><h3>🤖 AI 生成日报</h3>';
+  if (aiCfgOpen) {
+    html += '<div class="ai-config">'
+      + '<div class="cfg-row"><label>服务商</label><select id="ai-provider" onchange="aiProviderChange()">'
+      + '<option value="">未配置（用本地总结）</option>'
+      + Object.keys(AI_PROVIDERS).map(k=>'<option value="'+k+'"'+(cfg.provider===k?" selected":"")+'>'+AI_PROVIDERS[k].name+'</option>').join("")
+      + '</select></div>'
+      + '<div class="cfg-row"><label>API Key</label><input type="password" id="ai-key" placeholder="sk-..." value="'+escapeHtml(cfg.key)+'"></div>'
+      + '<div class="cfg-row"><label>接口</label><input id="ai-base" placeholder="https://api.deepseek.com/v1" value="'+escapeHtml(cfg.base)+'"></div>'
+      + '<div class="cfg-row"><label>模型</label><input id="ai-model" placeholder="deepseek-chat" value="'+escapeHtml(cfg.model)+'"></div>'
+      + '<div class="cfg-note">🔒 配置仅保存在本机浏览器（base64 混淆存储），不会上传到任何服务器。</div>'
+      + '</div>';
+  }
+  html += '<button class="ai-config-toggle" onclick="toggleAICfg()">'
+    + (aiCfgOpen ? "收起配置 ▲" : (cfg.key ? "修改 API 配置 ▼" : "配置 API（可选）▼")) + '</button>';
+  html += '<button class="ai-gen-btn" id="ai-gen" onclick="generateSummary()">生成日报</button>';
+  if (rec.summary) {
+    const isLocal = rec.summary.indexOf("【本地总结】") === 0;
+    html += '<div class="summary-box" id="summaryBox">'
+      + (isLocal ? '<span class="local-tag">已使用本地总结，配置 API 可获得更智能结果</span>' : '')
+      + escapeHtml(rec.summary.replace(/^【本地总结】\n?/, "")) + '</div>'
+      + '<div class="summary-actions">'
+      + '<button onclick="generateSummary()">🔄 重新生成</button>'
+      + '<button onclick="copySummary()">📋 复制总结</button>'
+      + '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+function toggleAICfg() { aiCfgOpen = !aiCfgOpen; saveAICfg(); renderDay(); }
+function aiProviderChange() {
+  const p = document.getElementById("ai-provider").value;
+  if (AI_PROVIDERS[p]) {
+    document.getElementById("ai-base").value = AI_PROVIDERS[p].base;
+    document.getElementById("ai-model").value = AI_PROVIDERS[p].model;
+  }
+}
+function saveAICfg() {
+  const pEl = document.getElementById("ai-provider");
+  if (!pEl) return;
+  localStorage.setItem("wn_ai_provider", pEl.value);
+  localStorage.setItem("wn_ai_key_b64", btoa(document.getElementById("ai-key").value || ""));
+  localStorage.setItem("wn_ai_base", document.getElementById("ai-base").value.trim());
+  localStorage.setItem("wn_ai_model", document.getElementById("ai-model").value.trim());
+}
+
+function collectDayLines() {
+  const key = dateKey(curDate.getFullYear(), curDate.getMonth(), curDate.getDate());
+  const rec = ALL[key];
+  const lines = [];
+  SLOTS.forEach(s => {
+    (rec[s.key]||[]).forEach(r => {
+      if (!(r.work&&r.work.trim()) && !(r.people&&r.people.trim())) return;
+      lines.push("["+(r.time||"--:--")+" "+s.name+"] "+(r.work||"").trim()+(r.people&&r.people.trim() ? " | 人员："+r.people.trim() : ""));
+    });
+  });
+  return lines;
+}
+
+function localSummary(lines) {
+  const peopleSet = [];
+  lines.forEach(l => {
+    const m = l.match(/人员：(.+)$/);
+    if (m) m[1].split(/[、，,\s\/]+/).forEach(p => { if (p && !peopleSet.includes(p)) peopleSet.push(p); });
+  });
+  let text = "【本地总结】\n今日共 "+lines.length+" 条工作记录：\n";
+  lines.forEach(l => { text += "· " + l + "\n"; });
+  if (peopleSet.length) text += "涉及人员："+peopleSet.join("、")+"\n";
+  text += "（以上为规则拼接的基础总结，配置 API 后可获得更智能的梳理）";
+  return text;
+}
+
+async function generateSummary() {
+  saveAICfg();
+  const lines = collectDayLines();
+  if (!lines.length) { alert("当日还没有记录，先添加记录再生成日报"); return; }
+  const key = dateKey(curDate.getFullYear(), curDate.getMonth(), curDate.getDate());
+  const cfg = aiCfg();
+  const btn = document.getElementById("ai-gen");
+  btn.disabled = true; btn.textContent = "生成中…";
+
+  let summary = null;
+  if (cfg.key && cfg.base && cfg.model) {
+    const prompt = "你是一名医疗工作助手。请根据以下病房工作记录，生成一份简洁的日报摘要。\n"
+      + "要求：按时间顺序梳理，突出重点工作、关键人员和待办事项。语言专业、简洁。\n\n记录：\n" + lines.join("\n");
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(()=>ctrl.abort(), 30000);
+      const resp = await fetch(cfg.base.replace(/\/+$/,"")+"/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type":"application/json", "Authorization":"Bearer "+cfg.key },
+        body: JSON.stringify({ model: cfg.model, messages: [{ role:"user", content: prompt }] }),
+        signal: ctrl.signal
+      });
+      clearTimeout(timer);
+      if (!resp.ok) throw new Error("HTTP "+resp.status);
+      const data = await resp.json();
+      summary = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+      if (!summary) throw new Error("empty");
+    } catch(e) {
+      summary = null;
+    }
+  }
+  if (!summary) summary = localSummary(lines);
+
+  ALL[key].summary = summary;
+  saveCurDate();
+  aiCfgOpen = false;
+  renderDay();
+}
+
+function copySummary() {
+  const key = dateKey(curDate.getFullYear(), curDate.getMonth(), curDate.getDate());
+  const text = (ALL[key].summary || "").replace(/^【本地总结】\n?/, "");
+  const done = () => alert("已复制到剪贴板");
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text, done));
+  } else fallbackCopy(text, done);
+}
+function fallbackCopy(text, done) {
+  const ta = document.createElement("textarea");
+  ta.value = text; document.body.appendChild(ta); ta.select();
+  try { document.execCommand("copy"); done(); } catch(e) {}
+  document.body.removeChild(ta);
+}
+
+/* ================= 📊 周期规律回顾 ================= */
+let reviewWeekday = 2;  // 默认周二（1=周一 … 7=周日）
+let reviewSlot = "morning";
+let reviewOrder = "asc"; // asc=旧→新, desc=新→旧
+let reviewRan = false;
+
+function renderReview() {
+  curDate = null;
+  const slotObj = SLOTS.find(s=>s.key===reviewSlot);
+  let html = '<div class="day-head">'
+    + '<button class="back-btn" onclick="renderCalendar()">← 返回日历</button>'
+    + '<div class="day-title">📊 周期规律回顾</div>'
+    + '</div>';
+
+  html += '<div class="review-filter"><div class="fr-row">'
+    + '<select id="rv-weekday">'
+    + ["周一","周二","周三","周四","周五","周六","周日"].map((n,i)=>'<option value="'+(i+1)+'"'+(reviewWeekday===i+1?" selected":"")+'>'+n+'</option>').join("")
+    + '</select>'
+    + '<select id="rv-slot">'
+    + SLOTS.map(s=>'<option value="'+s.key+'"'+(reviewSlot===s.key?" selected":"")+'>'+s.ico+' '+s.name+'</option>').join("")
+    + '</select>'
+    + '</div>'
+    + '<button class="go-btn" onclick="runReview()">查看规律</button>'
+    + '</div>';
+
+  html += '<div id="reviewResult"></div>';
+  main.innerHTML = html;
+  if (reviewRan) runReview();
+}
+
+function runReview() {
+  reviewWeekday = parseInt(document.getElementById("rv-weekday").value);
+  reviewSlot = document.getElementById("rv-slot").value;
+  reviewRan = true;
+  const slotObj = SLOTS.find(s=>s.key===reviewSlot);
+  const wdName = ["","周一","周二","周三","周四","周五","周六","周日"][reviewWeekday];
+  const box = document.getElementById("reviewResult");
+
+  // 收集匹配记录
+  const byTime = {}; // time -> [{date, work, people}]
+  Object.keys(ALL).forEach(date => {
+    const d = new Date(date+"T00:00:00");
+    const wd = d.getDay()===0 ? 7 : d.getDay();
+    if (wd !== reviewWeekday) return;
+    (ALL[date][reviewSlot]||[]).forEach(r => {
+      if (!(r.work&&r.work.trim()) && !(r.people&&r.people.trim())) return;
+      const t = r.time || "未定";
+      if (!byTime[t]) byTime[t] = [];
+      byTime[t].push({ date:date, work:(r.work||"").trim(), people:(r.people||"").trim() });
+    });
+  });
+
+  const times = Object.keys(byTime).sort();
+  let total = 0;
+  const weekSet = {};
+  const peopleCount = {};
+  times.forEach(t => byTime[t].forEach(r => {
+    total++;
+    weekSet[weekId(r.date)] = 1;
+    r.people.split(/[、，,\s\/]+/).forEach(p => { if (p) peopleCount[p] = (peopleCount[p]||0)+1; });
+  }));
+
+  let html = '<div class="review-head">'
+    + '<div class="rh-title">📅 每'+wdName+' '+slotObj.ico+' '+slotObj.name+'</div>'
+    + '<div class="rh-actions">'
+    + '<button onclick="toggleReviewOrder()">'+(reviewOrder==="asc"?"旧→新 ↓":"新→旧 ↑")+'</button>'
+    + (total ? '<button onclick="exportReview()">导出</button>' : '')
+    + '</div></div>';
+
+  if (!total) {
+    html += '<div class="empty-tip">每'+wdName+' '+slotObj.name+'暂无历史记录</div>';
+    box.innerHTML = html;
+    return;
+  }
+
+  html += '<div class="timeline">';
+  times.forEach(t => {
+    const list = byTime[t].slice().sort((a,b)=> reviewOrder==="asc" ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
+    const weeks = {};
+    list.forEach(r => weeks[weekId(r.date)] = 1);
+    const nWeeks = Object.keys(weeks).length;
+    html += '<div class="time-group">'
+      + '<div class="time-tag">🕐 '+t+(nWeeks>=2 ? '<span class="fire">🔥 '+nWeeks+'周</span>' : '')+'</div>';
+    list.forEach((r,i) => {
+      html += '<div class="tg-rec'+(i%2===1?" alt":"")+'">'
+        + '<div class="tg-body">'
+        + '<span class="tg-date">'+fmtCN(r.date)+'</span>'
+        + '<div class="tg-work">'+escapeHtml(r.work || "（无工作内容）")+'</div>'
+        + (r.people ? '<div class="tg-people">人员：'+escapeHtml(r.people)+'</div>' : '')
+        + '</div>'
+        + '<button class="tg-jump" onclick="openDayByKey(\''+r.date+'\')">查看</button>'
+        + '</div>';
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // 统计区
+  const top3 = Object.keys(peopleCount).map(p=>[p,peopleCount[p]]).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  html += '<div class="review-stats">共找到 <b>'+total+'</b> 条记录，横跨 <b>'+Object.keys(weekSet).length+'</b> 周';
+  if (top3.length) {
+    html += '<br>该时段常见人员：' + top3.map((x,i)=>(i+1)+'. <b>'+escapeHtml(x[0])+'</b>（'+x[1]+'次）').join('　');
+  }
+  html += '</div>';
+  box.innerHTML = html;
+}
+
+function toggleReviewOrder() {
+  reviewOrder = reviewOrder==="asc" ? "desc" : "asc";
+  runReview();
+}
+
+function exportReview() {
+  const slotObj = SLOTS.find(s=>s.key===reviewSlot);
+  const wdName = ["","周一","周二","周三","周四","周五","周六","周日"][reviewWeekday];
+  const lines = ["周期规律回顾：每"+wdName+" "+slotObj.name, ""];
+  const byTime = {};
+  Object.keys(ALL).forEach(date => {
+    const d = new Date(date+"T00:00:00");
+    if ((d.getDay()===0 ? 7 : d.getDay()) !== reviewWeekday) return;
+    (ALL[date][reviewSlot]||[]).forEach(r => {
+      if (!(r.work&&r.work.trim()) && !(r.people&&r.people.trim())) return;
+      const t = r.time || "未定";
+      if (!byTime[t]) byTime[t] = [];
+      byTime[t].push({ date:date, work:(r.work||"").trim(), people:(r.people||"").trim() });
+    });
+  });
+  let total = 0;
+  const weekSet = {};
+  Object.keys(byTime).sort().forEach(t => {
+    lines.push("🕐 "+t);
+    byTime[t].sort((a,b)=>a.date.localeCompare(b.date)).forEach(r => {
+      total++; weekSet[weekId(r.date)] = 1;
+      lines.push("  "+r.date+"："+(r.work||"")+(r.people ? " | 人员："+r.people : ""));
+    });
+    lines.push("");
+  });
+  lines.push("共 "+total+" 条记录，横跨 "+Object.keys(weekSet).length+" 周");
+  downloadText("周期回顾-每"+wdName+"-"+slotObj.name+".txt", lines.join("\n"));
 }
 
 /* ================= PWA ================= */
@@ -285,7 +792,12 @@ if ("serviceWorker" in navigator && location.protocol.indexOf("http")===0) {
 }
 
 /* ================= 启动 ================= */
-renderCalendar();
+(async function init(){
+  await openDB();
+  (await idbAll()).forEach(r => { ALL[r.date] = r; });
+  await migrateV1();
+  renderCalendar();
+})();
 </script>
 </body>
 </html>
